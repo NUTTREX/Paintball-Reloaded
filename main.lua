@@ -45,555 +45,472 @@ end
 
 -- [[ Variables ]]
 -- <:Important:>
+local dwVirtualInputManager = game:GetService('VirtualInputManager');
 local dwMarketplaceService = game:GetService('MarketplaceService');
 local dwReplicatedStorage = game:GetService('ReplicatedStorage');
+local dwUserInputService = game:GetService('UserInputService');
+local dwHttpService = game:GetService('HttpService');
 local dwRunService = game:GetService('RunService');
 local dwWorkspace = game:GetService('Workspace');
 local dwEntities = game:GetService('Players');
 local dwCoreGui = game:GetService('CoreGui');
 local dwDebris = game:GetService('Debris');
+local dwStat = game:GetService('Stats');
 local dwCamera = dwWorkspace.CurrentCamera;
+local dwLocalEntity = dwEntities.LocalPlayer;
+local dwGetPlayers = dwEntities.GetPlayers;
+
 -- <:Minor:>
-local getUI_Library = urlLoad('https://raw.githubusercontent.com/wally-rblx/LinoriaLib/main/Library.lua');
+local getUI_Library = urlLoad('https://raw.githubusercontent.com/NUTTREX/LinoriaLib/main/Library.lua');
 local getFunctions = urlLoad('https://raw.githubusercontent.com/NUTTREX/Roblox/main/Functions.lua');
-local game_Name = dwMarketplaceService:GetProductInfo(game.PlaceId).Name;
-
-local dwSelectionBox = dwWorkspace:WaitForChild('SelectionBox', 30);
-local dwEntitiesFolder = dwWorkspace:WaitForChild('Entities', 30);
-local dwChunksFolder = dwWorkspace:WaitForChild('Chunks', 30);
-
-local dwVisualsFolder = Instance.new('Folder');
+local getESP_Library = urlLoad('https://kiriot22.com/releases/ESP.lua');
+local game_Name = dwMarketplaceService:GetProductInfo(game.PlaceId).Name;   
+local dwPing = dwStat:WaitForChild('PerformanceStats', 30):WaitForChild('Ping', 30);
+local dwApplyDamage;
+local dwDebrisFolder;
+if dwWorkspace:WaitForChild('GameMain', 10):WaitForChild('ApplyDamage', 10) then
+    dwApplyDamage = dwWorkspace.GameMain.ApplyDamage;
+end;
+if dwWorkspace:WaitForChild('Debris', 10) then
+    dwDebrisFolder = dwWorkspace.Debris;
+end;
 -- <:Connections:>
-local dwMobChamCon; local dwMobTextCon; local dwOreChamCon; local dwOreTextCon;
 
 -- [[ Tables ]]
-local dwMobsData = {
-    ['pig'] = { 
-        Color3.fromRGB(255, 100, 140); -- [[ <Color3> FillInColor ]]
-        Color3.fromRGB(0, 0, 0); -- [[ <Color3> OutlineColor ]]
-        .5; -- [[ <Int> FillInTransparency ]]
-        0; -- [[ <Int> FillInColor ]]
+shared.DrawCache = {};
+shared.TagCache = {};
+shared.Threads = {};
+shared.Callbacks = {};
+
+local dwTrashData = {
+    ['Black'] = { 
+        Color3.fromRGB(255, 255, 255); -- [[ <Color3> Text ]]
+        20; -- [[ <Int> Size ]]
+        50; -- [[ <Int> ZIndex ]]
+        "Mythic Item"; -- [[ <String> Text ]]
     };
-    ['chicken'] = { 
-        Color3.fromRGB(255, 180, 80);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
+    ['Legendary'] = { 
+        Color3.fromRGB(225, 180, 70); 
+        20; 
+        40; 
+        "Legendary Item";
     };
-    ['zombie'] = { 
-        Color3.fromRGB(30, 70, 30);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
+    ['Epic'] = { 
+        Color3.fromRGB(160, 30, 255); 
+        20; 
+        30;
+        "Epic Item";
     };
-    ['spider'] = { 
-        Color3.fromRGB(100, 0, 0);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
+    ['Rare'] = { 
+        Color3.fromRGB(0, 170, 255); 
+        20; 
+        20;
+        "Rare Item";
     };
-    ['crawler'] = { 
-        Color3.fromRGB(69, 255, 90);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
+    ['Normal'] = { 
+        Color3.fromRGB(130, 130, 130); 
+        20; 
+        10;
+        "Normal Item";
     };
-    ['cow'] = { 
-        Color3.fromRGB(190, 85, 10);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
-    };
-    ['sheep'] = { 
-        Color3.fromRGB(255, 255, 255);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
-    };
-};
-local dwMobs = {
-    'pig';
-    'chicken';
-    'zombie';
-    'spider';
-    'crawler';
-    'cow';
-    'sheep';
-};
-local dwOreDecalData = {
-    ['rbxassetid://7225133219'] = {'Diamond Ore'};
-    ['rbxassetid://7225129962'] = {'Gold Ore'};
-    ['rbxassetid://7225125860'] = {'Iron Ore'};
-    ['rbxassetid://7216837867'] = {'Coal Ore'};
-};
-local dwOreData = {
-    ['Diamond Ore'] = { 
-        Color3.fromRGB(0, 255, 230); -- [[ <Color3> FillInColor ]]
-        Color3.fromRGB(0, 0, 0); -- [[ <Color3> OutlineColor ]]
-        .5; -- [[ <Int> FillInTransparency ]]
-        0; -- [[ <Int> FillInColor ]]
-    };
-    ['Gold Ore'] = { 
-        Color3.fromRGB(255, 170, 0);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
-    };
-    ['Iron Ore'] = { 
-        Color3.fromRGB(200,200,200);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
-    };
-    ['Coal Ore'] = { 
-        Color3.fromRGB(50,50,50);
-        Color3.fromRGB(0, 0, 0);
-        .5;
-        0;
-    };
-};
-local dwOres = {
-    'Diamond Ore';
-    'Gold Ore';
-    'Iron Ore';
-    'Coal Ore';
 };
 local dwAnimations = {
     [1] = { '|', '/', '─', '\\' };
     [2] = { '🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘' };
-    [3] = { 'N', 'N\'', 'N\'Z', 'N\'Zo', 'N\'Zot', 'N\'Zoth', 'N\'Zot', 'N\'Zo', 'N\'Z', 'N\'', '', 'N', 'Nu', 'Nut', 'Nutr', 'Nutre', 'Nutrex', 'Nutre', 'Nutr', 'Nut', 'Nu', 'N', ''};
-    [4] = { 'e', 'eg', 'egg', 'egg', 'egg ', 'egg s', 'egg sa', 'egg sal', 'egg sala', 'egg salad', 'egg salad ', 'egg salad i', 'egg salad is', 'egg salad is ', 'egg salad is r', 'egg salad is rl', 'egg salad is rly', 'egg salad is rly ', 'egg salad is rly f', 'egg salad is rly fa', 'egg salad is rly fat', 'egg salad is rly fa', 'egg salad is rly f', 'egg salad is rly ', 'egg salad is rly', 'egg salad is rl', 'egg salad is r', 'egg salad is ', 'egg salad is', 'egg salad i', 'egg salad ', 'egg salad', 'egg sala', 'egg sal', 'egg sa', 'egg s', 'egg ', 'egg', 'eg', 'e', ''};
+    [3] = { 'N', 'N\'', 'N\'Z', 'N\'Zo', 'N\'Zot', 'N\'Zoth', 'N\'Zot', 'N\'Zo', 'N\'Z', 'N\'', ' ', 'N', 'Nu', 'Nut', 'Nutr', 'Nutre', 'Nutrex', 'Nutre', 'Nutr', 'Nut', 'Nu', 'N', ' '};
+    [4] = { 'e', 'eg', 'egg', 'egg', 'egg ', 'egg s', 'egg sa', 'egg sal', 'egg sala', 'egg salad', 'egg salad ', 'egg salad i', 'egg salad is', 'egg salad is ', 'egg salad is r', 'egg salad is rl', 'egg salad is rly', 'egg salad is rly ', 'egg salad is rly f', 'egg salad is rly fa', 'egg salad is rly fat', 'egg salad is rly fa', 'egg salad is rly f', 'egg salad is rly ', 'egg salad is rly', 'egg salad is rl', 'egg salad is r', 'egg salad is ', 'egg salad is', 'egg salad i', 'egg salad ', 'egg salad', 'egg sala', 'egg sal', 'egg sa', 'egg s', 'egg ', 'egg', 'eg', 'e', ' '};
 };
 -- [[ Functions ]]
+
+local SaveManager = {} do
+    SaveManager.Ignore = {}
+    SaveManager.Parser = {
+        Toggle = {
+            Save = function(idx, object) 
+                return { type = 'Toggle', idx = idx, value = object.Value } 
+            end,
+            Load = function(idx, data)
+                if Toggles[idx] then 
+                    Toggles[idx]:SetValue(data.value)
+                end
+            end,
+        },
+        Slider = {
+            Save = function(idx, object)
+                return { type = 'Slider', idx = idx, value = tostring(object.Value) }
+            end,
+            Load = function(idx, data)
+                if Options[idx] then 
+                    Options[idx]:SetValue(data.value)
+                end
+            end,
+        },
+        Dropdown = {
+            Save = function(idx, object)
+                return { type = 'Dropdown', idx = idx, value = object.Value, mutli = object.Multi }
+            end,
+            Load = function(idx, data)
+                if Options[idx] then 
+                    Options[idx]:SetValue(data.value)
+                end
+            end,
+        },
+        ColorPicker = {
+            Save = function(idx, object)
+                return { type = 'ColorPicker', idx = idx, value = object.Value:ToHex() }
+            end,
+            Load = function(idx, data)
+                if Options[idx] then 
+                    Options[idx]:SetValueRGB(Color3.fromHex(data.value))
+                end
+            end,
+        },
+        KeyPicker = {
+            Save = function(idx, object)
+                return { type = 'KeyPicker', idx = idx, mode = object.Mode, key = object.Value }
+            end,
+            Load = function(idx, data)
+                if Options[idx] then 
+                    Options[idx]:SetValue({ data.key, data.mode })
+                end
+            end,
+        }
+    }
+
+    function SaveManager:Save(name)
+        local fullPath = tostring(game.PlaceId)..'/configs/' .. name .. '.json'
+
+        local data = {
+            version = 2,
+            objects = {}
+        }
+
+        for idx, toggle in next, Toggles do
+            if self.Ignore[idx] then continue end
+            table.insert(data.objects, self.Parser[toggle.Type].Save(idx, toggle))
+        end
+
+        for idx, option in next, Options do
+            if not self.Parser[option.Type] then continue end
+            if self.Ignore[idx] then continue end
+
+            table.insert(data.objects, self.Parser[option.Type].Save(idx, option))
+        end 
+
+        local success, encoded = pcall(dwHttpService.JSONEncode, dwHttpService, data)
+        if not success then
+            return false, 'failed to encode data'
+        end
+
+        writefile(fullPath, encoded)
+        return true
+    end
+
+    function SaveManager:Load(name)
+        local file = tostring(game.PlaceId)..'/configs/' .. name .. '.json'
+        if not isfile(file) then return false, 'invalid file' end
+
+        local success, decoded = pcall(dwHttpService.JSONDecode, dwHttpService, readfile(file))
+        if not success then return false, 'decode error' end
+        if decoded.version ~= 2 then return false, 'invalid version' end
+
+        for _, option in next, decoded.objects do
+            if self.Parser[option.type] then
+                self.Parser[option.type].Load(option.idx, option)
+            end
+        end
+
+        return true
+    end
+
+    function SaveManager.Refresh()
+        local list = listfiles(tostring(game.PlaceId)..'/configs')
+
+        local out = {}
+        for i = 1, #list do
+            local file = list[i]
+            if file:sub(-5) == '.json' then
+                -- i hate this but it has to be done ...
+
+                local pos = file:find('.json', 1, true)
+                local start = pos
+
+                local char = file:sub(pos, pos)
+                while char ~= '/' and char ~= '\\' and char ~= '' do
+                    pos = pos - 1
+                    char = file:sub(pos, pos)
+                end
+
+                if char == '/' or char == '\\' then
+                    table.insert(out, file:sub(pos + 1, start - 1))
+                end
+            end
+        end
+        
+        Options.ConfigList.Values = out;
+        Options.ConfigList:SetValues()
+
+        return out
+    end
+
+    function SaveManager.Check()
+        local list = listfiles(tostring(game.PlaceId)..'/configs')
+
+        for _, file in next, list do
+            if isfolder(file) then continue end
+
+            local data = readfile(file)
+            local success, decoded = pcall(dwHttpService.JSONDecode, dwHttpService, data)
+
+            if success and type(decoded) == 'table' and decoded.version ~= 2 then
+                pcall(delfile, file)
+            end
+        end
+    end
+end;
+
+local function _unload()
+    getUI_Library:Unload();
+
+    if getESP_Library then
+        do
+            getESP_Library:Toggle(false);
+            getESP_Library.FaceCamera = false;
+            getESP_Library.TeamMates = false;
+            getESP_Library.Names = false;
+            getESP_Library.Tracers = false;
+            getESP_Library.Boxes = false;
+        end
+    end
+
+    if shared.TagCache then
+        for Index = #shared.TagCache, 1, -1 do
+            local TagObject = table.remove(shared.TagCache, Index);
+            TagObject:Destroy()
+        end;
+    end;
+
+    if shared.DrawCache then
+        for Index = #shared.DrawCache, 1, -1 do
+            local RenderObject = table.remove(shared.DrawCache, Index);
+            RenderObject.Visible = false;
+            RenderObject:Remove();
+            RenderObject = nil
+        end;
+    end;
+
+    for Index = 1, #shared.Threads do
+        coroutine.close(shared.Threads[Index])
+    end;
+
+    for Index = 1, #shared.Callbacks do
+        task.spawn(shared.Callbacks[Index])
+    end;
+end;
 
 local function WTS(dwEntity)
     local Screen = dwCamera:WorldToViewportPoint(dwEntity.Position);
     return Vector2.new(Screen.X, Screen.Y);
 end;
 
-local function onMobAddedDrawCham(dwEntity, m_ColorFill, m_ColorOutline, m_TransFill, m_TransOutline, dwConnection, dwSecondaryConnection, dwCallBack, dwSecondaryCallBack)
-    local dwCham = Instance.new('Highlight');
-    dwCham.Adornee = dwEntity;
-    dwCham.Parent = dwVisualsFolder;
-    dwCham.Enabled = true;
-
-    dwCham.FillColor = m_ColorFill or Color3.fromRGB(255, 255, 255);
-    dwCham.OutlineColor = m_ColorOutline or Color3.fromRGB(0, 0, 0);
-
-    dwCham.FillTransparency = m_TransFill or 0;
-    dwCham.OutlineTransparency = m_TransOutline or 0;
-
-    dwCham.Name = getFunctions.Generate_String(69);
-
-    local dwTag = Instance.new('StringValue');
-    dwTag.Name = "Cham"
-    dwTag.Parent = dwEntity;
-
-    task.spawn(function()
-        while task.wait() do
-            if dwConnection then
-                dwCham.FillColor = dwConnection.Value;
-            end;
-
-            if dwSecondaryConnection then
-                dwCham.OutlineColor = dwSecondaryConnection.Value;
-            end;
-            
-            if dwCallBack.Value == false then
-                dwCham:Destroy();
-                dwTag:Destroy();
-            end;
-
-            if not dwSecondaryCallBack.Value[dwEntity.Name] then
-                dwCham:Destroy();
-                dwTag:Destroy();
-            end;
+local function KillAll()
+    for Index, dwEntity in next, dwGetPlayers(dwEntities) do
+        if dwEntity ~= dwLocalEntity and dwEntity.Character and dwEntity.Character:FindFirstChild('Humanoid') and dwEntity.Character.Humanoid.Health > 0 then
+            local Table = {
+                [1] = dwEntity;
+                [2] = {
+                    ['charge_amm'] = 1;
+                    ['scope_shot'] = true;
+                };
+                [3] = dwHttpService:GenerateGUID(true);
+                [4] = false;
+            };
+            dwApplyDamage:FireServer(Table);
         end;
-    end);
-    
-    local dwAncestryChanged;
-    dwAncestryChanged = dwEntity.AncestryChanged:Connect(function()
-        if not dwEntity:IsDescendantOf(dwWorkspace) then
-            dwDebris:AddItem(dwCham, 1);
-            dwTag:Destroy();
-            dwAncestryChanged:Disconnect();
-        end;
-    end);
+    end;
 end;
 
-local function onOreAddedDrawText(dwEntity, m_Color, dwText, dwZIndex, dwTextSize, dwCallBack, dwSecondaryCallBack)
-    local dwTest = Drawing.new('Text');
-    dwTest.Position = WTS(dwEntity);
-    dwTest.Color = m_Color or Color3.fromRGB(255, 255, 255);
-    dwTest.Text = dwText or dwEntity.Name;
-    dwTest.Size = dwTextSize or 20;
-    dwTest.Center = true;
-    dwTest.Outline = true;
-    dwTest.Font = 0;
-    dwTest.ZIndex = dwZIndex or 10;
-
-    local dwTag = Instance.new('StringValue');
-    dwTag.Name = "Text";
-    dwTag.Parent = dwEntity;
-    
-    local dwEntityParent = dwEntity.Parent;
-
-    local dwRunServiceSignal;
-    
-    task.spawn(function()
-        while task.wait() do
-            if not dwSecondaryCallBack.Value[dwEntity.Name] and dwTest ~= nil and dwTest.__OBJECT_EXISTS then
-                dwTest:Remove();
-                dwTag:Destroy();
-                dwRunServiceSignal:Disconnect();
-                break;
-            end;
-
-            if dwCallBack.Value == false and dwTest ~= nil and dwTest.__OBJECT_EXISTS then
-                dwTest:Remove();
-                dwTest = nil;
-                dwTag:Destroy();
-                dwRunServiceSignal:Disconnect();
-                break;
-            end;
-        end;
-    end);
-
-    dwRunServiceSignal = dwRunService.RenderStepped:Connect(function()
-        local _, OnScreen = dwCamera:WorldToViewportPoint(dwEntity.Position)
-        if dwEntity:IsDescendantOf(Workspace) and dwTest ~= nil and OnScreen and dwTest.__OBJECT_EXISTS then
-            dwTest.Position = WTS(dwEntity);
-            dwTest.Visible = true;
-        elseif dwEntity:IsDescendantOf(Workspace) and dwTest ~= nil and not OnScreen and dwTest.__OBJECT_EXISTS then
-            dwTest.Visible = false;
-        elseif not dwEntity:IsDescendantOf(Workspace) and dwTest ~= nil and dwTest.__OBJECT_EXISTS then
-            dwTag:Destroy();
-            dwTest:Remove();
-            dwTest = nil;
-            dwRunServiceSignal:Disconnect();
-        end
-    end)
+local function getTime()
+    local dwTime = os.date('*t');
+    local dwDate = os.date('%A, %B %d %Y');
+    return ("%02d:%02d:%02d %s %s"):format(((dwTime.hour % 24) - 1) % 12 + 1, dwTime.min, dwTime.sec, dwTime.hour > 11 and "PM" or "AM", dwDate);
 end;
 
-local function onMobAddedDrawText(dwEntity, m_Color, dwText, dwZIndex, dwTextSize, dwCallBack, dwSecondaryCallBack)
-    local dwTest = Drawing.new('Text');
-    dwTest.Position = WTS(dwEntity);
-    dwTest.Color = m_Color or Color3.fromRGB(255, 255, 255);
-    dwTest.Text = dwText or dwEntity.Name;
-    dwTest.Size = dwTextSize or 20;
-    dwTest.Center = true;
-    dwTest.Outline = true;
-    dwTest.Font = 0;
-    dwTest.ZIndex = dwZIndex or 10;
+local function getPing()
+    local dwPingColor = "\"#00ff00\""
+    local dwPingString = '0'
 
-    local dwTag = Instance.new('StringValue');
-    dwTag.Name = "Text"
-    dwTag.Parent = dwEntity.Parent;
-    
-    local dwEntityParent = dwEntity.Parent;
+    if dwPing:GetValue() > 200 then
+        dwPingColor = "\"#ff0000\""
+    elseif dwPing:GetValue() > 150 and dwPing:GetValue() < 200 then
+        dwPingColor = "\"#ffff00\""
+    elseif dwPing:GetValue() < 100 then
+        dwPingColor = "\"#00ff00\""
+    end;
 
-    local dwRunServiceSignal;
-
-    task.spawn(function()
-        while task.wait() do
-            if dwEntityParent ~= nil then
-                if not dwSecondaryCallBack.Value[dwEntityParent.Name] and dwTest ~= nil and dwTest.__OBJECT_EXISTS then
-                    dwTest:Remove();
-                    dwTag:Destroy();
-                    dwRunServiceSignal:Disconnect();
-                    break;
-                end;
-            end
-
-            if dwCallBack.Value == false and dwTest ~= nil and dwTest.__OBJECT_EXISTS then
-                dwTest:Remove();
-                dwTest = nil;
-                dwTag:Destroy();
-                dwRunServiceSignal:Disconnect();
-                break;
-            end;
-        end;
-    end);
-
-    dwRunServiceSignal = dwRunService.RenderStepped:Connect(function()
-        local _, OnScreen = dwCamera:WorldToViewportPoint(dwEntity.Position)
-        if dwEntity:IsDescendantOf(Workspace) and dwTest ~= nil and OnScreen and dwTest.__OBJECT_EXISTS then
-            dwTest.Position = WTS(dwEntity);
-            dwTest.Visible = true;
-        elseif dwEntity:IsDescendantOf(Workspace) and dwTest ~= nil and not OnScreen and dwTest.__OBJECT_EXISTS then
-            dwTest.Visible = false;
-        elseif not dwEntity:IsDescendantOf(Workspace) and dwTest ~= nil and dwTest.__OBJECT_EXISTS then
-            dwTag:Destroy();
-            dwTest:Remove();
-            dwTest = nil;
-            dwRunServiceSignal:Disconnect();
-        end
-    end)
+    dwPingString = '<font color='..dwPingColor..'>'..string.split(tostring(dwPing:GetValue()), '.')[1]..'ms'..'</font>'
+    return dwPingString
 end;
 
-local function onPartName(dwEntity, dwName)
-    dwEntity.Name = dwName
-
-    local dwTag = Instance.new('StringValue');
-    dwTag.Name = "Named"
-    dwTag.Parent = dwEntity;
-end
-
--- [[ Code ]]
-
-getUI_Library:SetWatermark(game_Name.." | "..game.PlaceId);
-
-for Index, dwChunk in next, dwChunksFolder:GetChildren() do -- Game Fix
-    if dwChunk:IsA('Folder') then 
-        for Index, dwPart in next, dwChunk:GetChildren() do
-            if dwPart:IsA('BasePart') and not dwPart:FindFirstChild('Named') then
-                for Index, dwDecal in next, dwPart:GetChildren() do
-                    if dwDecal:IsA('Decal') then
-                        if dwOreDecalData[dwDecal.Texture] then
-                            onPartName(dwPart, dwOreDecalData[dwDecal.Texture][1]);
-                        end;
-                    end;
+local function RainbowBullets()
+    for Index, Instance in next, dwDebrisFolder:GetChildren() do
+        if Instance:IsA('BasePart') then
+            Instance.Color = Color3.fromHSV(tick()%5/5, 1, 1);
+        end;
+    end
+    for Index, Model in next, dwCamera:GetChildren() do
+        if Model:IsA('Model') and Model.Name == 'ProjectileModel' then
+            for Index, Instance in next, Model:GetDescendants() do
+                if Instance:IsA('Trail') then
+                    Instance.Color = ColorSequence.new(Color3.fromHSV(tick()%5/5, 1, 1));
                 end;
             end;
         end;
     end;
 end;
+-- [[ Code ]]
 
-dwChunksFolder.ChildAdded:Connect(function() -- Game Fix
-    for Index, dwChunk in next, dwChunksFolder:GetChildren() do 
-        for Index, dwPart in next, dwChunk:GetChildren() do
-            if dwPart:IsA('BasePart') and not dwPart:FindFirstChild('Named') then
-                for Index, dwDecal in next, dwPart:GetChildren() do
-                    if dwDecal:IsA('Decal') then
-                        if dwOreDecalData[dwDecal.Texture] then
-                            onPartName(dwPart, dwOreDecalData[dwDecal.Texture][1]);
-                        end;
-                    end;
-                end;
-            end;
-        end;
+spawn(function()
+    while task.wait() do
+        getUI_Library:SetWatermark(game_Name..' - '..game.PlaceId..' | '..getTime()..' | '..getPing());
     end;
 end);
 
-local mainWindow = getUI_Library:CreateWindow('') do
-    -- // Visuals
-    local visualsTab = mainWindow:AddTab('Visuals') do
-        local visualsBox = visualsTab:AddLeftTabbox() do
-            local visualsBox = visualsBox:AddTab('Mobs') do
-                visualsBox:AddToggle('EntitiesCham', { Text = 'Entities Chams'})
-                visualsBox:AddToggle('EntitiesTextESP', { Text = 'Entities Text ESP'})
-                visualsBox:AddDropdown('EntitiesDropdown', { Text = 'Select Entities', Default = nil, Values = dwMobs, AllowNull = true, Multi = true});
-            end;
-        end;
-        local AnothervisualsBox = visualsTab:AddRightTabbox() do
-            local visualsBox = AnothervisualsBox:AddTab('Ores') do
-                visualsBox:AddToggle('OresCham', { Text = 'Ores Chams'})
-                visualsBox:AddToggle('OresTextESP', { Text = 'Ores Text ESP'})
-                visualsBox:AddDropdown('OresDropdown', { Text = 'Select Ores', Default = nil, Values = dwOres, AllowNull = true, Multi = true});
-            end;
-        end;
-    end;
-    -- //
-    -- // Miscs
-    local MiscellaneousTab = mainWindow:AddTab('Miscellaneous') do
-        local visualsBox = MiscellaneousTab:AddLeftTabbox() do
-            local visualsBox = visualsBox:AddTab('World') do
-                visualsBox:AddToggle('SelectionBox', { Default = true, Text = 'SelectionBox'}):AddColorPicker('SelectionBoxColor', { Default = Color3.fromRGB(0, 0, 0)}):AddColorPicker('SelectionBoxOutlineColor', { Default = Color3.fromRGB(0, 0, 0)})
-                visualsBox:AddToggle('RainbowSelectionBox', { Text = 'Rainbow SelectionBox'})
-                visualsBox:AddSlider('SurfaceTransparency', { Text = 'SelectionBox Surface Transparency', Min = 0, Max = 1, Default = 1, Rounding = 1});
-            end;
-        end;
-    end;
-    -- //
-end;
+-- // Window
 
+local Window = getUI_Library:CreateWindow({
+    Title = '';
+    AutoShow  = true;
+    Center = true;
+    Size = UDim2.fromOffset(550, 550);
+});
+
+-- // Tabs
+
+local Tabs = {};
+Tabs.Rage = Window:AddTab('Rage');
+Tabs.Visuals = Window:AddTab('Visuals');
+Tabs.Miscellaneous = Window:AddTab('Miscellaneous');
+
+-- // Groups
+
+local Groups = {};
+
+Groups.Player = Tabs.Rage:AddLeftGroupbox('Player');
+    Groups.Player:AddToggle('KillAll', { Text = 'Kill All', Tooltip = 'Kill enemy players' }):AddKeyPicker('KillAuraBind', { Default = 'N', NoUI = false, Text = 'KillAura', SyncToggleState = true});
+    Groups.Player:AddDivider()
+Groups.Players = Tabs.Visuals:AddLeftGroupbox('Players Visuals');
+    Groups.Players:AddToggle('ESPEnabled', { Text = 'Enabled' }):OnChanged(function()
+        getESP_Library:Toggle(Toggles.ESPEnabled.Value);
+    end);
+    Groups.Players:AddToggle('ESPShowTeams', { Text = 'Show teammates' }):OnChanged(function()
+        getESP_Library.TeamMates = Toggles.ESPShowTeams.Value;
+    end);
+    Groups.Players:AddToggle('ESPShowNames', { Text = 'Show names' }):OnChanged(function()
+        getESP_Library.Names = Toggles.ESPShowNames.Value;
+    end);
+    Groups.Players:AddToggle('ESPShowTracers', { Text = 'Show tracers' }):OnChanged(function()
+        getESP_Library.Tracers = Toggles.ESPShowTracers.Value;
+    end);
+    Groups.Players:AddToggle('ESPShowBoxes', { Text = 'Show boxes' }):OnChanged(function()
+        getESP_Library.Boxes = Toggles.ESPShowBoxes.Value;
+    end);
+Groups.World = Tabs.Visuals:AddRightGroupbox('Weapon Visuals');
+    Groups.World:AddToggle('RainbowBullets', { Text = 'Rainbow Bullets' })
+Groups.Gui = Tabs.Miscellaneous:AddRightGroupbox('Gui');
+    Groups.Gui:AddLabel('<font color="#0084ff">Nutrex</font> - Script')
+    Groups.Gui:AddLabel('<font color="#00ff66">Wally</font> - Contribution')
+    Groups.Gui:AddDivider()
+    Groups.Gui:AddButton('Unload script', function() pcall(_unload) end)
 task.spawn(function()
     local dwPickedAnimation = dwAnimations[math.random(1, #dwAnimations)];
     local Delay;
-    
+    local dwSelected = ' ';
+
     if dwPickedAnimation == dwAnimations[3] or dwPickedAnimation == dwAnimations[1] then
         Delay = .2;
     else
         Delay = .1;
     end;
 
+    task.spawn(function()
+        while wait() do
+            Window:SetWindowTitle('<font color="#'..Color3.fromHSV(tick()%5/5, 1, 1):ToHex()..'">'..dwSelected..'</font>');
+        end;
+    end);
     while task.wait() do
         for dwIndex, dwField in next, dwPickedAnimation do
-            mainWindow:SetWindowTitle(dwField);
+            dwSelected = dwField;
             task.wait(Delay);
         end;
     end;
 end);
 
-pcall(function() -- big troll!
-    local Joke = 868739862.5*2/2*2/3*3/69*69;
-    local JokeString = dwEntities:GetNameFromUserIdAsync(Joke);
-    debug.setconstant(require(dwReplicatedStorage.LocalModules.GeneralUI.Chat).add_message, 1, tostring(JokeString));
-    debug.setconstant(require(dwReplicatedStorage.LocalModules.GeneralUI.Chat).add_message, 4, 'Cock Master');
-end);
+if type(readfile) == 'function' and type(writefile) == 'function' and type(makefolder) == 'function' and type(isfolder) == 'function' then
+    Tabs.Settings = Window:AddTab('Settings');
+    Groups.Configs = Tabs.Settings:AddLeftGroupbox('Configs');
 
-dwVisualsFolder.Name = getFunctions.Generate_String(69);
-dwVisualsFolder.Parent = dwCoreGui;
+    makefolder(tostring(game.PlaceId))
+    makefolder(tostring(game.PlaceId)..'\\configs')
+
+    Groups.Configs:AddDropdown('ConfigList', { Text = 'Config list', Values = {} })
+    Groups.Configs:AddInput('ConfigName',    { Text = 'Config name' })
+
+    Groups.Configs:AddDivider()
+
+    Groups.Configs:AddButton('Save config', function()
+        local name = Options.ConfigName.Value;
+        if name:gsub(' ', '') == '' then
+            return getUI_Library:Notify('Invalid config name.', 3)
+        end
+
+        local success, err = SaveManager:Save(name)
+        if not success then
+            return getUI_Library:Notify(tostring(err), 5)
+        end
+
+        getUI_Library:Notify(string.format('Saved config %q', name), 5)
+        task.defer(SaveManager.Refresh)
+    end)
+
+    Groups.Configs:AddButton('Load config', function()
+        local name = Options.ConfigList.Value
+        local success, err = SaveManager:Load(name)
+        if not success then
+            return getUI_Library:Notify(tostring(err), 5)
+        end
+
+        getUI_Library:Notify(string.format('Loaded config %q', name), 5)
+    end)
+
+    Groups.Configs:AddButton('Refresh list', SaveManager.Refresh)
+
+    task.defer(SaveManager.Refresh)
+    task.defer(SaveManager.Check)
+else
+    getUI_Library:Notify('Failed to create configs tab due to your exploit missing certain file functions.', 2)
+end;
 
 -- [[ Toggles | Options ]]
 
-Toggles.OresCham:OnChanged(function()
-    if Toggles.OresCham.Value then
-        for Index, dwChunk in next, dwChunksFolder:GetChildren() do -- Quick check if we already have Entities
-            if dwChunk:IsA('Folder') then 
-                for Index, dwPart in next, dwChunk:GetChildren() do
-                    if dwPart:IsA('BasePart') and Options.OresDropdown.Value[dwPart.Name] and not dwPart:FindFirstChild('Cham') then
-                        onMobAddedDrawCham(dwPart, dwOreData[dwPart.Name][1], dwOreData[dwPart.Name][2], dwOreData[dwPart.Name][3], dwOreData[dwPart.Name][4], nil, nil, Toggles.OresCham, Options.OresDropdown);
-                    end;
-                end;
-            end;
-        end;
-        local dwOreChamCon = dwChunksFolder.ChildAdded:Connect(function(dwChild) -- Connection So it's Automatic
-            task.wait(1)
-            for Index, dwPart in next, dwChild:GetChildren() do
-                if dwPart:IsA('BasePart') and Options.OresDropdown.Value[dwPart.Name] and not dwPart:FindFirstChild('Cham') then
-                    onMobAddedDrawCham(dwPart, dwOreData[dwPart.Name][1], dwOreData[dwPart.Name][2], dwOreData[dwPart.Name][3], dwOreData[dwPart.Name][4], nil, nil, Toggles.OresCham, Options.OresDropdown);
-                end;
-            end;
-        end);
-    elseif Toggles.OresCham and dwOreChamCon then
-        dwOreChamCon:Disconnect();
-    end;
-end)
+getUI_Library.KeybindFrame.Visible = true;
 
-Toggles.OresTextESP:OnChanged(function()
-    if Toggles.OresTextESP.Value then
-        for Index, dwChunk in next, dwChunksFolder:GetChildren() do -- Quick check if we already have Entities
-            if dwChunk:IsA('Folder') then 
-                for Index, dwPart in next, dwChunk:GetChildren() do
-                    if dwPart:IsA('BasePart') and Options.OresDropdown.Value[dwPart.Name] and not dwPart:FindFirstChild('Text') then
-                        onOreAddedDrawText(dwPart, nil, dwPart.Name, 10, 20, Toggles.OresTextESP, Options.OresDropdown);
-                    end;
-                end;
-            end;
-        end;
-
-        local dwOreTextCon = dwChunksFolder.ChildAdded:Connect(function(dwChild) -- Connection So it's Automatic
-            task.wait(1)
-            for Index, dwPart in next, dwChild:GetChildren() do
-                if dwPart:IsA('BasePart') and Options.OresDropdown.Value[dwPart.Name] and not dwPart:FindFirstChild('Text') then
-                    onOreAddedDrawText(dwPart, nil, dwPart.Name, 10, 20, Toggles.OresTextESP, Options.OresDropdown);
-                end;
-            end;
-        end);
-    elseif Toggles.OresTextESP and dwOreTextCon then
-        dwOreTextCon:Disconnect();
-    end;
-end)
-
-Options.OresDropdown:OnChanged(function()
-    for Index, dwChunk in next, dwChunksFolder:GetChildren() do -- Quick check if we already have Entities
-        if dwChunk:IsA('Folder') then 
-            for Index, dwPart in next, dwChunk:GetChildren() do
-                if dwPart:IsA('BasePart') and Options.OresDropdown.Value[dwPart.Name] and not dwPart:FindFirstChild('Cham') and Toggles.OresCham.Value then
-                    onMobAddedDrawCham(dwPart, dwOreData[dwPart.Name][1], dwOreData[dwPart.Name][2], dwOreData[dwPart.Name][3], dwOreData[dwPart.Name][4], nil, nil, Toggles.OresCham, Options.OresDropdown);
-                end;
-            end;
-        end;
-
-        if dwChunk:IsA('Folder') then 
-            for Index, dwPart in next, dwChunk:GetChildren() do
-                if dwPart:IsA('BasePart') and Options.OresDropdown.Value[dwPart.Name] and not dwPart:FindFirstChild('Text') and Toggles.OresTextESP.Value then
-                    onOreAddedDrawText(dwPart, nil, dwPart.Name, 10, 20, Toggles.OresTextESP, Options.OresDropdown);
-                end;
-            end;
-        end;
-    end;
-end);
-
-Toggles.EntitiesTextESP:OnChanged(function()
-    if Toggles.EntitiesTextESP.Value then
-        for Index, dwModel in next, dwEntitiesFolder:GetChildren() do -- Quick check if we already have Entities
-            if dwModel:IsA('Model') and Options.EntitiesDropdown.Value[dwModel.Name] and not dwModel:FindFirstChild('Text') then
-                if dwModel:FindFirstChild('Body') then
-                    onMobAddedDrawText(dwModel.Body, nil, dwModel.Name, 10, 20, Toggles.EntitiesTextESP, Options.EntitiesDropdown);
-                end;
-            end;
-        end;
-        local dwMobTextCon = dwEntitiesFolder.ChildAdded:Connect(function(dwChild) -- Connection So it's Automatic
-            if dwChild:IsA('Model') and Options.EntitiesDropdown.Value[dwChild.Name] and not dwChild:FindFirstChild('Text') then
-                if dwChild:FindFirstChild('Body') then
-                    onMobAddedDrawText(dwChild.Body, nil, dwChild.Name, 10, 20, Toggles.EntitiesTextESP, Options.EntitiesDropdown);
-                end;
-            end;
-        end);
-    elseif Toggles.EntitiesTextESP and dwMobTextCon then
-        dwMobTextCon:Disconnect();
-    end;
-end)
-
-Toggles.EntitiesCham:OnChanged(function()
-    if Toggles.EntitiesCham.Value then
-        for Index, dwModel in next, dwEntitiesFolder:GetChildren() do -- Quick check if we already have Entities
-            if dwModel:IsA('Model') and Options.EntitiesDropdown.Value[dwModel.Name] and not dwModel:FindFirstChild('Cham') then
-                onMobAddedDrawCham(dwModel, dwMobsData[dwModel.Name][1], dwMobsData[dwModel.Name][2], dwMobsData[dwModel.Name][3], dwMobsData[dwModel.Name][4], nil, nil, Toggles.EntitiesCham, Options.EntitiesDropdown);
-            end;
-        end;
-        local dwMobChamCon = dwEntitiesFolder.ChildAdded:Connect(function(dwChild) -- Connection So it's Automatic
-            if dwChild:IsA('Model') and Options.EntitiesDropdown.Value[dwChild.Name] and not dwChild:FindFirstChild('Cham') then
-                onMobAddedDrawCham(dwChild, dwMobsData[dwChild.Name][1], dwMobsData[dwChild.Name][2], dwMobsData[dwChild.Name][3], dwMobsData[dwChild.Name][4], nil, nil, Toggles.EntitiesCham, Options.EntitiesDropdown);
-            end;
-        end);
-    elseif Toggles.EntitiesCham and dwMobChamCon then
-        dwMobChamCon:Disconnect();
-    end;
-end)
-
-Options.EntitiesDropdown:OnChanged(function()
-    for Index, dwModel in next, dwEntitiesFolder:GetChildren() do -- Quick check if we already have Entities
-        if dwModel:IsA('Model') and Options.EntitiesDropdown.Value[dwModel.Name] and not dwModel:FindFirstChild('Cham') and Toggles.EntitiesCham.Value then
-            onMobAddedDrawCham(dwModel, dwMobsData[dwModel.Name][1], dwMobsData[dwModel.Name][2], dwMobsData[dwModel.Name][3], dwMobsData[dwModel.Name][4], nil, nil, Toggles.EntitiesCham, Options.EntitiesDropdown);
-        end;
-
-        if dwModel:IsA('Model') and Options.EntitiesDropdown.Value[dwModel.Name] and not dwModel:FindFirstChild('Text') and Toggles.EntitiesTextESP.Value then
-            if dwModel:FindFirstChild('Body') then
-                onMobAddedDrawText(dwModel.Body, nil, dwModel.Name, 10, 20, Toggles.EntitiesTextESP, Options.EntitiesDropdown);
-            end;
-        end;
-    end;
-end);
-
-Toggles.SelectionBox:OnChanged(function()
-    if Toggles.SelectionBox.Value then
-        dwSelectionBox.Visible = true;
+Toggles.KillAll:OnChanged(function()
+    if Toggles.KillAll.Value then
+        dwRunService:BindToRenderStep('KillAll', Enum.RenderPriority.Camera.Value, KillAll);
     else
-        dwRunService:UnbindFromRenderStep('RainbowSelectionBox');
-        dwSelectionBox.Color3 = Options.SelectionBoxOutlineColor.Value;
-        dwSelectionBox.SurfaceColor3 = Options.SelectionBoxColor.Value;
-        Toggles.RainbowSelectionBox:SetValue(false);
-        dwSelectionBox.Visible = false;
+        dwRunService:UnbindFromRenderStep('KillAll');
     end;
 end);
 
-Toggles.RainbowSelectionBox:OnChanged(function()
-    if Toggles.RainbowSelectionBox.Value and Toggles.SelectionBox.Value then
-        dwRunService:BindToRenderStep('RainbowSelectionBox', Enum.RenderPriority.Camera.Value, function() dwSelectionBox.Color3 = Color3.fromHSV(tick()%5/5, 1, 1); dwSelectionBox.SurfaceColor3 = Color3.fromHSV(tick()%5/5, 1, 1); end);
+Toggles.RainbowBullets:OnChanged(function()
+    if Toggles.RainbowBullets.Value then
+        dwRunService:BindToRenderStep('RainbowBullets', Enum.RenderPriority.Camera.Value, RainbowBullets);
     else
-        dwRunService:UnbindFromRenderStep('RainbowSelectionBox');
-        dwSelectionBox.Color3 = Options.SelectionBoxOutlineColor.Value;
-        dwSelectionBox.SurfaceColor3 = Options.SelectionBoxColor.Value;
+        dwRunService:UnbindFromRenderStep('RainbowBullets');
     end;
 end);
 
-Options.SelectionBoxColor:OnChanged(function()
-    if Toggles.RainbowSelectionBox.Value == false then
-        dwSelectionBox.SurfaceColor3 = Options.SelectionBoxColor.Value;
-    end;
-end);
-
-Options.SelectionBoxOutlineColor:OnChanged(function()
-    if Toggles.RainbowSelectionBox.Value == false then
-        dwSelectionBox.Color3 = Options.SelectionBoxOutlineColor.Value; 
-    end;
-end);
-
-Options.SurfaceTransparency:OnChanged(function()
-    dwSelectionBox.SurfaceTransparency = Options.SurfaceTransparency.Value
-end);
+-- Hooks
 
 getUI_Library:Notify(string.format('Loaded script in %.4f second(s)!', tick() - LoadTime), 5);
